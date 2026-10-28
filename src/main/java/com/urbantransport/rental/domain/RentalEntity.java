@@ -73,6 +73,24 @@ public class RentalEntity {
     @Column(name = "payment_date")
     private LocalDate paymentDate;
 
+    @Column(name = "rejection_reason", length = 255)
+    private String rejectionReason;
+
+    @Column(name = "payment_failure_reason", length = 40)
+    private String paymentFailureReason;
+
+    @Column(name = "assignment_rejection_reason", length = 255)
+    private String assignmentRejectionReason;
+
+    @Column(name = "completed_trips")
+    private Integer completedTrips;
+
+    @Column(name = "customer_id")
+    private UUID customerId;
+
+    @Column(name = "payment_requested_at")
+    private Instant paymentRequestedAt;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;

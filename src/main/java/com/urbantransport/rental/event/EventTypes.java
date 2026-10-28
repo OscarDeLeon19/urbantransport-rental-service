@@ -14,6 +14,7 @@ public final class EventTypes {
     public static final String PAYMENT_REQUESTED = "PaymentRequested";
     public static final String RENTAL_PAID = "RentalPaid";
     public static final String RENTAL_ASSIGNED = "RentalAssigned";
+    public static final String RENTAL_REJECTED = "RentalRejected";
 
     public static final String PAYMENT_COMPLETED = "PaymentCompleted";
     public static final String PAYMENT_FAILED = "PaymentFailed";
