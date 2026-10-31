@@ -8,18 +8,23 @@ import com.urbantransport.rental.domain.RentalSettingsEntity;
 import com.urbantransport.rental.domain.RentalStatus;
 import com.urbantransport.rental.repository.RentalRepository;
 import com.urbantransport.rental.repository.RentalSettingsRepository;
+import io.zonky.test.db.postgres.embedded.EmbeddedPostgres;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.kafka.test.context.EmbeddedKafka;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -30,7 +35,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 
 @SpringBootTest(properties = "app.jobs.payment-resend.fixed-delay-ms=3600000")
 @AutoConfigureMockMvc
-@Import(TestcontainersConfiguration.class)
+@EmbeddedKafka(partitions = 1, bootstrapServersProperty = "spring.kafka.bootstrap-servers")
 public abstract class AbstractIntegrationTest {
 
     protected static final ZoneId ZONE = ZoneId.of("America/Guatemala");
@@ -38,6 +43,15 @@ public abstract class AbstractIntegrationTest {
     protected static final UUID CUSTOMER_ID = UUID.fromString("88888888-8888-8888-8888-888888888888");
     protected static final String NIT = "12345678";
     protected static final BigDecimal CONFIRMED_PRICE = new BigDecimal("2400.00");
+
+    private static final EmbeddedPostgres POSTGRES = startPostgres();
+
+    @DynamicPropertySource
+    static void databaseProperties(DynamicPropertyRegistry registry) {
+        registry.add("spring.datasource.url", () -> POSTGRES.getJdbcUrl("postgres", "postgres"));
+        registry.add("spring.datasource.username", () -> "postgres");
+        registry.add("spring.datasource.password", () -> "postgres");
+    }
 
     @Autowired
     protected MockMvc mockMvc;
@@ -140,5 +154,20 @@ public abstract class AbstractIntegrationTest {
     protected int count(String sql, Object... args) {
         Integer total = jdbcTemplate.queryForObject(sql, Integer.class, args);
         return total == null ? 0 : total;
+    }
+
+    private static EmbeddedPostgres startPostgres() {
+        try {
+            EmbeddedPostgres postgres = EmbeddedPostgres.builder().start();
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                try {
+                    postgres.close();
+                } catch (IOException ignored) {
+                }
+            }));
+            return postgres;
+        } catch (IOException exception) {
+            throw new UncheckedIOException(exception);
+        }
     }
 }
