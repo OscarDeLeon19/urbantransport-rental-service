@@ -36,21 +36,14 @@ pipeline {
         stage('Deploy') {
             steps {
                 sh '''
-                    # Crear el directorio si no existe (Buena práctica)
                     mkdir -p $DEPLOY_DIR
-
-                    # Copiar archivos de configuracion al servidor
                     cp docker-compose.yml $DEPLOY_DIR/docker-compose.yml
-                    cp nginx.conf         $DEPLOY_DIR/nginx.conf
-
-                    # Levantar/actualizar contenedores
                     cd $DEPLOY_DIR
-                    # 1. Actualizamos el nombre del contenedor principal aquí:
                     docker compose up -d --no-deps rental-service
-                    docker compose up -d --no-deps nginx
 
-                    # Limpiar imagenes viejas para no llenar el EC2
+                    # Limpieza: imágenes sin etiqueta y versiones numeradas viejas (conserva 2)
                     docker image prune -f
+                    docker images $IMAGE_NAME --format '{{.Tag}}' | grep -E '^[0-9]+$' | sort -n | head -n -2 | xargs -r -I{} docker rmi $IMAGE_NAME:{} || true
                 '''
             }
         }
