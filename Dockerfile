@@ -19,4 +19,4 @@ USER appuser
 
 EXPOSE 8081
 
-ENTRYPOINT ["java", "-jar", "app.jar"]s
+ENTRYPOINT ["java", "-jar", "app.jar"]
